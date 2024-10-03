@@ -41,6 +41,7 @@ const defaultState: SettingsState = {
             buttonVisible: false,
         },
         showTagsOnFrame: true,
+        alwaysPropagateNewSizeToKeyframes: false,
     },
     player: {
         canvasBackgroundColor: '#ffffff',

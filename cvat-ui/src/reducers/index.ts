@@ -299,7 +299,7 @@ export interface PluginsState {
                 menu: {
                     items: PluginComponent[];
                 };
-                topBar:{
+                topBar: {
                     menu: {
                         items: PluginComponent[];
                     };
@@ -870,6 +870,7 @@ export interface WorkspaceSettingsState {
     textPosition: 'auto' | 'center';
     textContent: string;
     showTagsOnFrame: boolean;
+    alwaysPropagateNewSizeToKeyframes: boolean;
 }
 
 export interface ShapesSettingsState {

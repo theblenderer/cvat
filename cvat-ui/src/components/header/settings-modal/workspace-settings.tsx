@@ -31,6 +31,8 @@ interface Props {
     textPosition: 'center' | 'auto';
     textContent: string;
     showTagsOnFrame: boolean;
+    alwaysPropagateNewSizeToKeyframes: boolean;
+    onSwitchAlwaysPropagateNewSizeToKeyframes(enabled: boolean): void;
     onSwitchAutoSave(enabled: boolean): void;
     onChangeAutoSaveInterval(interval: number): void;
     onChangeAAMZoomMargin(margin: number): void;
@@ -61,6 +63,8 @@ function WorkspaceSettingsComponent(props: Props): JSX.Element {
         textPosition,
         textContent,
         showTagsOnFrame,
+        alwaysPropagateNewSizeToKeyframes,
+        onSwitchAlwaysPropagateNewSizeToKeyframes,
         onSwitchAutoSave,
         onChangeAutoSaveInterval,
         onChangeAAMZoomMargin,
@@ -149,6 +153,24 @@ function WorkspaceSettingsComponent(props: Props): JSX.Element {
                 <Col span={24}>
                     <Text type='secondary'>
                         Show text for an object on the canvas not only when the object is activated
+                    </Text>
+                </Col>
+            </Row>
+            <Row className='cvat-workspace-settings-always-propagate-new-size'>
+                <Col span={24}>
+                    <Checkbox
+                        className='cvat-text-color'
+                        checked={alwaysPropagateNewSizeToKeyframes}
+                        onChange={(event: CheckboxChangeEvent): void => {
+                            onSwitchAlwaysPropagateNewSizeToKeyframes(event.target.checked);
+                        }}
+                    >
+                        Propagate new size to keyframes
+                    </Checkbox>
+                </Col>
+                <Col span={24}>
+                    <Text type='secondary'>
+                        Always propagate new size to other keyframes when changing size of track rotated bounding box
                     </Text>
                 </Col>
             </Row>

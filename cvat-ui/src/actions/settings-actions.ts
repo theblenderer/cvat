@@ -50,6 +50,7 @@ export enum SettingsActionTypes {
     ENABLE_IMAGE_FILTER = 'ENABLE_IMAGE_FILTER',
     DISABLE_IMAGE_FILTER = 'DISABLE_IMAGE_FILTER',
     RESET_IMAGE_FILTERS = 'RESET_IMAGE_FILTERS',
+    SWITCH_ALWAYS_PROPAGATE_NEW_SIZE_TO_KEYFRAMES = 'SWITCH_ALWAYS_PROPAGATE_NEW_SIZE_TO_KEYFRAMES',
 }
 
 export function changeShapesOpacity(opacity: number): AnyAction {
@@ -407,5 +408,13 @@ export function resetImageFilters(): AnyAction {
     return {
         type: SettingsActionTypes.RESET_IMAGE_FILTERS,
         payload: {},
+    };
+}
+export function switchAlwaysPropagateNewSizeToKeyframes(alwaysPropagateNewSizeToKeyframes: boolean): AnyAction {
+    return {
+        type: SettingsActionTypes.SWITCH_ALWAYS_PROPAGATE_NEW_SIZE_TO_KEYFRAMES,
+        payload: {
+            alwaysPropagateNewSizeToKeyframes,
+        },
     };
 }

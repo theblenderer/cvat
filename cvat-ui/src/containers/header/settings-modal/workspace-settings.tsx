@@ -19,6 +19,7 @@ import {
     switchTextPosition,
     switchTextContent,
     switchShowingTagsOnFrame,
+    switchAlwaysPropagateNewSizeToKeyframes,
 } from 'actions/settings-actions';
 
 import { CombinedState } from 'reducers';
@@ -39,6 +40,7 @@ interface StateToProps {
     textPosition: 'auto' | 'center';
     textContent: string;
     showTagsOnFrame: boolean;
+    alwaysPropagateNewSizeToKeyframes: boolean;
 }
 
 interface DispatchToProps {
@@ -55,6 +57,7 @@ interface DispatchToProps {
     onChangeTextPosition(position: 'auto' | 'center'): void;
     onChangeTextContent(textContent: string[]): void;
     onSwitchShowingTagsOnFrame(enabled: boolean): void;
+    onSwitchAlwaysPropagateNewSizeToKeyframes(enabled: boolean): void; // Add the function type
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -73,6 +76,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
         textPosition,
         textContent,
         showTagsOnFrame,
+        alwaysPropagateNewSizeToKeyframes,
     } = workspace;
 
     return {
@@ -89,6 +93,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
         textPosition,
         textContent,
         showTagsOnFrame,
+        alwaysPropagateNewSizeToKeyframes,
     };
 }
 
@@ -106,6 +111,7 @@ const mapDispatchToProps: DispatchToProps = {
     onChangeTextPosition: switchTextPosition,
     onChangeTextContent: switchTextContent,
     onSwitchShowingTagsOnFrame: switchShowingTagsOnFrame,
+    onSwitchAlwaysPropagateNewSizeToKeyframes: switchAlwaysPropagateNewSizeToKeyframes,
 };
 
 function WorkspaceSettingsContainer(props: StateToProps & DispatchToProps): JSX.Element {
