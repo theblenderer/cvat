@@ -1193,6 +1193,26 @@ export class Track extends Drawn {
             { ...this.shapes[frame], points } : copyShape(this.get(frame), { points });
 
         this.shapes[frame] = redoShape;
+        const newWidth = points[2] - points[0];
+        const newHeight = points[3] - points[1];
+        for (const keyframe in this.shapes) {
+            if (keyframe !== frame.toString()) {
+                const currentPoints = this.shapes[keyframe].points;
+                const oldWidth = currentPoints[2] - currentPoints[0];
+                const oldHeight = currentPoints[3] - currentPoints[1];
+
+                // Move the shape to keep the center of the shape in the same position
+                currentPoints[0] += (oldWidth - newWidth) / 2;
+                currentPoints[1] += (oldHeight - newHeight) / 2;
+                currentPoints[2] = currentPoints[0] + newWidth;
+                currentPoints[3] = currentPoints[1] + newHeight;
+
+                this.shapes[keyframe] = {
+                    ...this.shapes[keyframe],
+                    points: currentPoints,
+                };
+            }
+        }
         this.source = redoSource;
         this.appendShapeActionToHistory(
             HistoryActions.CHANGED_POINTS,
@@ -1399,7 +1419,7 @@ export class Track extends Drawn {
 
         throw new DataError(
             'No one left position or right position was found. ' +
-                `Interpolation impossible. Client ID: ${this.clientID}`,
+            `Interpolation impossible. Client ID: ${this.clientID}`,
         );
     }
 }
@@ -1691,7 +1711,7 @@ export class PolylineShape extends PolyShape {
                 // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
                 distances.push(
                     Math.abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) /
-                        Math.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2),
+                    Math.sqrt((y2 - y1) ** 2 + (x2 - x1) ** 2),
                 );
             } else {
                 // The link below works for lines (which have infinite length)
@@ -2208,8 +2228,7 @@ export class MaskShape extends Shape {
         return [];
     }
 
-    public removeUnderlyingPixels(frame: number):
-    {
+    public removeUnderlyingPixels(frame: number): {
         clientIDs: number[],
         undo: Function,
         redo: Function,
@@ -3249,7 +3268,7 @@ export class SkeletonTrack extends Track {
 
         throw new DataError(
             'No one left position or right position was found. ' +
-                `Interpolation impossible. Client ID: ${this.clientID}`,
+            `Interpolation impossible. Client ID: ${this.clientID}`,
         );
     }
 }
