@@ -7,6 +7,10 @@
   </a>
 </p>
 
+# Fork:
+
+This fork adds a feature to CVAT that enables propagating sizes of tracks to all other keyframes automatically, to be better suited to top-down labeling.
+
 # Computer Vision Annotation Tool (CVAT)
 
 [![CI][ci-img]][ci-url]
