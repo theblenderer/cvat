@@ -54,7 +54,7 @@ from cvat.apps.engine.media_extractors import (
     ZipChunkWriter,
     ZipCompressedChunkWriter,
 )
-from cvat.apps.engine.utils import md5_hash, preload_images
+from cvat.apps.engine.utils import md5_hash, load_image
 from utils.dataset_manifest import ImageManifestManager
 
 slogger = ServerLogManager(__name__)
@@ -98,6 +98,13 @@ class MediaCache:
                 item = create_item()
 
         return item
+
+    def _delete_cache_item(self, key: str):
+        try:
+            self._cache.delete(key)
+            slogger.glob.info(f"Removed chunk from the cache: key {key}")
+        except pickle.UnpicklingError:
+            slogger.glob.error(f"Failed to remove item from the cache: key {key}", exc_info=True)
 
     def _get_cache_item(self, key: str) -> Optional[_CacheItem]:
         slogger.glob.info(f"Starting to get chunk from cache: key {key}")
@@ -241,6 +248,13 @@ class MediaCache:
             )
         )
 
+    def remove_segment_chunk(
+        self, db_segment: models.Segment, chunk_number: str, *, quality: str
+    ) -> None:
+        self._delete_cache_item(
+            self._make_chunk_key(db_segment, chunk_number=chunk_number, quality=quality)
+        )
+
     def get_cloud_preview(self, db_storage: models.CloudStorage) -> Optional[DataWithMime]:
         return self._to_data_with_mime(self._get_cache_item(self._make_preview_key(db_storage)))
 
@@ -307,15 +321,13 @@ class MediaCache:
                 cloud_storage_instance.bulk_download_to_dir(
                     files=files_to_download, upload_dir=tmp_dir
                 )
-                media = preload_images(media)
 
-                for checksum, (_, fs_filename, _) in zip(checksums, media):
-                    if checksum and not md5_hash(fs_filename) == checksum:
+                for checksum, media_item in zip(checksums, media):
+                    if checksum and not md5_hash(media_item[1]) == checksum:
                         slogger.cloud_storage[db_cloud_storage.id].warning(
                             "Hash sums of files {} do not match".format(file_name)
                         )
-
-                yield from media
+                    yield load_image(media_item)
         else:
             requested_frame_iter = iter(frame_ids)
             next_requested_frame_id = next(requested_frame_iter, None)
@@ -345,7 +357,7 @@ class MediaCache:
             assert next_requested_frame_id is None
 
             if db_task.dimension == models.DimensionType.DIM_2D:
-                media = preload_images(media)
+                media = map(load_image, media)
 
             yield from media
 
@@ -457,22 +469,35 @@ class MediaCache:
 
         # Optimize frame access if all the required frames are already cached
         # Otherwise we might need to download files.
-        # This is not needed for video tasks, as it will reduce performance
-        from cvat.apps.engine.frame_provider import FrameOutputType, TaskFrameProvider
+        # This is not needed for video tasks, as it will reduce performance,
+        # because of reading multiple files (chunks)
+        from cvat.apps.engine.frame_provider import FrameOutputType, make_frame_provider
 
-        task_frame_provider = TaskFrameProvider(db_task)
+        task_frame_provider = make_frame_provider(db_task)
 
         use_cached_data = False
         if db_task.mode != "interpolation":
             required_frame_set = set(frame_ids)
-            available_chunks = [
-                self._has_key(self._make_chunk_key(db_segment, chunk_number, quality=quality))
-                for db_segment in db_task.segment_set.filter(type=models.SegmentType.RANGE).all()
-                for chunk_number, _ in groupby(
+            available_chunks = []
+            for db_segment in db_task.segment_set.filter(type=models.SegmentType.RANGE).all():
+                segment_frame_provider = make_frame_provider(db_segment)
+
+                for i, chunk_frames in groupby(
                     sorted(required_frame_set.intersection(db_segment.frame_set)),
-                    key=lambda frame: frame // db_data.chunk_size,
-                )
-            ]
+                    key=lambda abs_frame: (
+                        segment_frame_provider.validate_frame_number(
+                            task_frame_provider.get_rel_frame_number(abs_frame)
+                        )[1]
+                    ),
+                ):
+                    if not list(chunk_frames):
+                        continue
+
+                    chunk_available = self._has_key(
+                        self._make_chunk_key(db_segment, i, quality=quality)
+                    )
+                    available_chunks.append(chunk_available)
+
             use_cached_data = bool(available_chunks) and all(available_chunks)
 
         if hasattr(db_data, "video"):
@@ -488,8 +513,7 @@ class MediaCache:
                     frame_range = (
                         (
                             db_data.start_frame
-                            + chunk_number * db_data.chunk_size
-                            + chunk_frame_idx * frame_step
+                            + (chunk_number * db_data.chunk_size + chunk_frame_idx) * frame_step
                         )
                         for chunk_frame_idx in range(db_data.chunk_size)
                     )
@@ -610,15 +634,15 @@ class MediaCache:
     def prepare_context_images_chunk(self, db_data: models.Data, frame_number: int) -> DataWithMime:
         zip_buffer = io.BytesIO()
 
-        related_images = db_data.related_files.filter(primary_image__frame=frame_number).all()
+        related_images = db_data.related_files.filter(images__frame=frame_number).all()
         if not related_images:
             return zip_buffer, ""
 
         with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
             common_path = os.path.commonpath(list(map(lambda x: str(x.path), related_images)))
-            for i in related_images:
-                path = os.path.realpath(str(i.path))
-                name = os.path.relpath(str(i.path), common_path)
+            for related_image in related_images:
+                path = os.path.realpath(str(related_image.path))
+                name = os.path.relpath(str(related_image.path), common_path)
                 image = cv2.imread(path)
                 success, result = cv2.imencode(".JPEG", image)
                 if not success:

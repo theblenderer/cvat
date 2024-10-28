@@ -367,7 +367,7 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
             jobInstance.startFrame,
         );
 
-        if (newFrame !== frameNumber && newFrame !== null && isAbleToChangeFrame()) {
+        if (newFrame !== frameNumber && newFrame !== null && isAbleToChangeFrame(newFrame)) {
             if (playing) {
                 onSwitchPlay(false);
             }
@@ -395,7 +395,7 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
             frameFrom,
             jobInstance.stopFrame,
         );
-        if (newFrame !== frameNumber && newFrame !== null && isAbleToChangeFrame()) {
+        if (newFrame !== frameNumber && newFrame !== null && isAbleToChangeFrame(newFrame)) {
             if (playing) {
                 onSwitchPlay(false);
             }
@@ -534,12 +534,8 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
     };
 
     private onDeleteFrame = (): void => {
-        const {
-            deleteFrame, frameNumber, jobInstance,
-        } = this.props;
-        if (jobInstance.type !== JobType.GROUND_TRUTH) {
-            deleteFrame(frameNumber);
-        }
+        const { deleteFrame, frameNumber } = this.props;
+        deleteFrame(frameNumber);
     };
 
     private onRestoreFrame = (): void => {
@@ -637,7 +633,7 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
 
     private changeFrame(frame: number): void {
         const { onChangeFrame } = this.props;
-        if (isAbleToChangeFrame()) {
+        if (isAbleToChangeFrame(frame)) {
             onChangeFrame(frame);
         }
     }
@@ -701,7 +697,7 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
                 redoAction={redoAction}
                 undoShortcut={normalizedKeyMap.UNDO}
                 redoShortcut={normalizedKeyMap.REDO}
-                drawShortcut={normalizedKeyMap.SWITCH_DRAW_MODE}
+                drawShortcut={normalizedKeyMap.SWITCH_DRAW_MODE_STANDARD_CONTROLS}
                 switchToolsBlockerShortcut={normalizedKeyMap.SWITCH_TOOLS_BLOCKER_STATE}
                 playPauseShortcut={normalizedKeyMap.PLAY_PAUSE}
                 deleteFrameShortcut={normalizedKeyMap.DELETE_FRAME}
@@ -720,7 +716,6 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
                 toolsBlockerState={toolsBlockerState}
                 jobInstance={jobInstance}
                 activeControl={activeControl}
-                deleteFrameAvailable={jobInstance.type !== JobType.GROUND_TRUTH}
             />
         );
     }
